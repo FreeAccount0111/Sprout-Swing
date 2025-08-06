@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 927bdc0c02fa014459a7ebaec9ad5a0d, type: 3}
   m_Name: Ball Util
   m_EditorClassIdentifier: 
-  speedGround: 5
+  speedGround: 20
+  heightTrunk: 0.9

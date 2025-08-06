@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Player
+namespace Ball
 {
     public class FakeHeightObject : MonoBehaviour
     {
@@ -65,19 +65,21 @@ namespace Player
 
         private void CheckGroundHit()
         {
-            if(transBody.position.y<transObj.position.y&& !isGrounded)
+            if (transBody.position.y < transObj.position.y && !isGrounded)
             {
                 transBody.position = transObj.position;
                 isGrounded = true;
-                if(!enBall)
+                if (!enBall)
                     switch (_bounceIndex)
                     {
                         case 0:
-                            if (transform.position.x < -4 || transform.position.x > 4 || transform.position.y < -4 || transform.position.y > 4)
+                            if (transform.position.x < -4 || transform.position.x > 4 || transform.position.y < -4 ||
+                                transform.position.y > 4)
                             {
                                 enBall = true;
                                 OnGroundHitEvent?.Invoke(transform.position, false);
                             }
+
                             break;
                         case 1:
                             enBall = true;
@@ -90,7 +92,6 @@ namespace Player
 
                 Bounce();
                 SlowDownGroundVelocity();
-
             }
         }
 

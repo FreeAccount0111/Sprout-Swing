@@ -1,7 +1,8 @@
 using System;
+using Player;
 using UnityEngine;
 
-namespace Player
+namespace Ball
 {
     public class BallCtrl : MonoBehaviour
     {

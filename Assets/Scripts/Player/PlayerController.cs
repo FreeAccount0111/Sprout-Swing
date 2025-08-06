@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Player
 {
@@ -14,6 +15,9 @@ namespace Player
         
         private void Update()
         {
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+                return;
+            
             if (Input.GetMouseButtonDown(0))
             {
                 var point = Camera.main.ScreenToWorldPoint(Input.mousePosition);

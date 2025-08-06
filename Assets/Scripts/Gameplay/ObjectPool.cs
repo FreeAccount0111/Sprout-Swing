@@ -90,6 +90,7 @@ public class ObjectPool : MonoBehaviour
 
     //khai bao pool
     public Pool flower;
+    public Pool ball;
     
     public Dictionary<int, int> dicClones = new Dictionary<int, int>();
     public List<Pool> pools = new List<Pool>();
@@ -103,6 +104,7 @@ public class ObjectPool : MonoBehaviour
     {
         //add pool
         pools.Add(flower);
+        pools.Add(ball);
 
         foreach (var pool in pools)
         {
@@ -136,7 +138,6 @@ public class ObjectPool : MonoBehaviour
 
     public GameObject Get(Pool p, bool active = true)
     {
-        Debug.Log(p.go);
         var obj = p.Get(transform, dicClones);
         //obj.transform.localScale = Vector3.one;
         obj.SetActive(active);
