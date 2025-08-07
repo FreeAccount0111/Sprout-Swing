@@ -1,49 +1,56 @@
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Util;
 
 namespace Player
 {
     public class PlayerController : MonoBehaviour
     {
-        [SerializeField] private GameObject handleObj;
-        [SerializeField] private LineRenderer line;
+        [SerializeField] private PlayerType playerType;
+        [SerializeField] private BaseState currentState;
 
-        private bool _isDragging;
+        [SerializeField] private PlayerStickState playerStickState;
+        [SerializeField] private PlayerSelectState playerSelectState;
 
-        public static event Action<Vector2> OnStick;
+        private void OnEnable()
+        {
+            GameEvent.OnChangeType += ChangeState;
+            GameEvent.OnSelectBall += SelectBallType;
+        }
+
+        private void OnDisable()
+        {
+            GameEvent.OnChangeType -= ChangeState;
+            GameEvent.OnSelectBall -= SelectBallType;
+        }
+
+        private void ChangeState(PlayerType playerType)
+        {
+            this.playerType = playerType;
+            currentState.ExitState();
+
+            switch (this.playerType)
+            {
+                case PlayerType.Stick:
+                    currentState = playerStickState;
+                    break;
+                case PlayerType.Select:
+                    currentState = playerSelectState;
+                    break;
+            }
+            
+            currentState.EnterState();
+        }
+
+        private void SelectBallType(BallType ballType)
+        {
+            playerSelectState.SetBallType(ballType);
+        }
         
         private void Update()
         {
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-                return;
-            
-            if (Input.GetMouseButtonDown(0))
-            {
-                var point = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                var newPos = new Vector3(point.x, point.y, 0);
-                
-                handleObj.SetActive(true);
-                handleObj.transform.position = newPos;
-
-                _isDragging = true;
-            }
-
-            if (Input.GetMouseButtonUp(0))
-            {
-                OnStick?.Invoke(line.GetPosition(1));
-                
-                handleObj.SetActive(false);
-                line.SetPosition(1, Vector3.zero);
-                _isDragging = false;
-            }
-
-            if (_isDragging)
-            {
-                var point = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                line.SetPosition(1,
-                    new Vector3(point.x - handleObj.transform.position.x, point.y - handleObj.transform.position.y, 0));
-            }
+            currentState.UpdateState();
         }
     }
 }

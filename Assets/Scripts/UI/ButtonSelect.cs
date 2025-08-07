@@ -8,7 +8,7 @@ namespace UI
     {
         [SerializeField] private GroupSelect groupSelect;
         [SerializeField] private Sprite iconOn, iconOff;
-        [SerializeField] private Button btn;
+        [SerializeField] protected Button btn;
 
         protected void Awake()
         {

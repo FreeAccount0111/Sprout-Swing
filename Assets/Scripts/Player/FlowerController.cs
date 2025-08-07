@@ -15,6 +15,8 @@ namespace Player
 
         [SerializeField] private List<Sprite> flowers = new List<Sprite>();
 
+        public int IndexWater => indexWater;
+
         private void OnEnable()
         {
             Initialized();
@@ -37,7 +39,7 @@ namespace Player
             
             if (indexWater == 2)
             {
-                var newBall = ObjectPool.Instance.Get(ObjectPool.Instance.ball).GetComponent<BallMovement>();
+                var newBall = ObjectPool.Instance.Get(ObjectPool.Instance.ball).GetComponent<BallController>();
                 newBall.transform.position = transform.position;
                 newBall.GrowUp();
             }

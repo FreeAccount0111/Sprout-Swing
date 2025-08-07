@@ -91,6 +91,7 @@ public class ObjectPool : MonoBehaviour
     //khai bao pool
     public Pool flower;
     public Pool ball;
+    public Pool water;
     
     public Dictionary<int, int> dicClones = new Dictionary<int, int>();
     public List<Pool> pools = new List<Pool>();
@@ -105,6 +106,7 @@ public class ObjectPool : MonoBehaviour
         //add pool
         pools.Add(flower);
         pools.Add(ball);
+        pools.Add(water);
 
         foreach (var pool in pools)
         {

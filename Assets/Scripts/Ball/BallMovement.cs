@@ -8,50 +8,77 @@ namespace Ball
 {
     public class BallMovement : MonoBehaviour
     {
-        [SerializeField] private BallUtil ballUtil;
         [SerializeField] private BallController ballController;
 
         private const float Gravity = -9.81f;
         
-        [SerializeField] private Transform transObj;
-        [SerializeField] private Transform transBody;
-        [SerializeField] private Transform transShadow;
-
-        [SerializeField] private Transform mask;
-        
-        public float verticalVelocity;
-        public bool onTrunk;
         public bool isThrowBack;
+        private bool _isMoving;
         private Coroutine _coroutine;
 
         private void OnEnable()
         {
-            PlayerController.OnStick += StickBall;
+            ResetState();
+            GameEvent.OnStick += StickBall;
         }
 
         private void OnDisable()
         {
-            PlayerController.OnStick -= StickBall;
+            GameEvent.OnStick -= StickBall;
+        }
+
+        private void ResetState()
+        {
+            _isMoving = false;
+            isThrowBack = false;
         }
 
         private void StickBall(Vector2 force)
         {
+            if (_isMoving)
+                return;
+            
             var posTarget = MapController.Instance.GetPosCellByPosWorld((Vector2)transform.position - (force.magnitude + 1) * force.normalized);
-            if (Vector2.Distance(transObj.position, posTarget) < 0.5f)
+            if (Vector2.Distance(ballController.transObj.position, posTarget) < 0.5f)
                 return;
 
-            _coroutine = StartCoroutine(Vector2.Distance(transObj.position, posTarget) / 4f > ballUtil.heightTrunk ? ThrowNewCoroutine(Vector2.Distance(transObj.position, posTarget) / 4f, posTarget) : ThrowNewCoroutine(1, posTarget));
+            _isMoving = true;
+            ballController.CurrentBall.StartStick();
+            _coroutine = StartCoroutine(Vector2.Distance(ballController.transObj.position, posTarget) / 4f > ballController.ballUtil.heightTrunk ? ThrowNewCoroutine(Vector2.Distance(ballController.transObj.position, posTarget) / 4f, posTarget) : ThrowNewCoroutine(1, posTarget));
         }
 
         IEnumerator ThrowNewCoroutine(float c, Vector3 posTarget)
         {
             Vector2 posOrigin = transform.position;
             float distance = Vector2.Distance(posOrigin, posTarget);
-            float height = onTrunk ? ballUtil.heightTrunk : 0;
+            float height = ballController.onTrunk ? ballController.ballUtil.heightTrunk : 0;
+            
+            Vector3 posF = OutMap(posTarget) ? MapController.Instance.GetSymmetryPoint(posOrigin, posTarget).Item2 : posTarget;
+            float heightOut = MapController.Instance.GetCellByWorldPosition(posF).Flower == null ? 0 : ballController.ballUtil.heightTrunk;
             
             float k = Mathf.Sqrt((c - height) / c);
-            float xa = onTrunk ? (distance * k) / (1 - k) : distance / 2f;
-            float xb = onTrunk ? distance / (1 - k) : distance / 2f;
+            float xa = ballController.onTrunk ? (distance * k) / (1 - k) : distance / 2f;
+            float xb = ballController.onTrunk ? distance / (1 - k) : distance / 2f;
+
+            
+
+            if (!Mathf.Approximately(height, heightOut))
+            {
+                xa = (distance * k) / (1 - k);
+                xb = distance / (1 - k);
+            }
+            else if(ballController.onTrunk)
+            {
+                c *= 2;
+                k = Mathf.Sqrt((c - height) / c);
+                xa = (distance * k) / (1 - k);
+                xb = (distance * k) / (1 - k);
+            }
+            else
+            {
+                xa = distance / 2f;
+                xb = distance / 2f;
+            }
             
             float x = 0;
             float y = 0;
@@ -59,15 +86,16 @@ namespace Ball
             float amount = 0;
             while (amount < 1)
             {
-                amount += (ballUtil.speedGround / distance) * Time.deltaTime;
+                amount += (ballController.ballUtil.speedGround / distance) * Time.deltaTime;
                 x = Mathf.Lerp(-xa, xb, amount);
                 y = ((height - c) / (xa * xa)) * x * x + c;
-                transBody.localPosition = new Vector3(0, y, 0);
-                transObj.position = Vector3.Lerp(posOrigin, posTarget, amount);
+                ballController.transBody.localPosition = new Vector3(0, y, 0);
+                ballController.transObj.position = Vector3.Lerp(posOrigin, posTarget, amount);
 
-                if (isThrowBack && !OutMap())
+                if (isThrowBack && !OutMap(ballController.transObj.position))
                     isThrowBack = false;
-                if ( !isThrowBack && OutMap())
+                
+                if ( !isThrowBack && OutMap(ballController.transObj.position))
                 {
                     var value = MapController.Instance.GetSymmetryPoint(posOrigin, posTarget);
                     posOrigin = value.Item1;
@@ -75,46 +103,29 @@ namespace Ball
 
                     isThrowBack = true;
                 }
+
+                ballController.CurrentBall.OnFlying();
                 yield return null;
             }
 
             x = xb;
             y = ((height - c) / (xa * xa)) * x * x + c;
-            transBody.localPosition = new Vector3(0, y, 0);
-            transObj.position = posTarget;
+            ballController.transBody.localPosition = new Vector3(0, y, 0);
+            ballController.transObj.position = posTarget;
             
-            if (MapController.Instance.CheckHole(transform.position) || onTrunk)
-            {
-                onTrunk = true;
-                yield return Win();
-            }
+            ballController.CurrentBall.LandOnGrow();
+            yield return new WaitForSeconds(0.5f);
             
             isThrowBack = false;
+            _isMoving = false;
         }
-        private bool OutMap()
+        private bool OutMap(Vector3 pos)
         {
-            if (transObj.position.x > 13 || transObj.position.x < -13)
+            if (pos.x > 13 || pos.x < -13)
                 return true;
-            if (transObj.position.y > 9 || transObj.position.y < -9)
+            if (pos.y > 9 || pos.y < -9)
                 return true;
             return false;
-        }
-        IEnumerator Win()
-        {
-            var newFlower = ObjectPool.Instance.Get(ObjectPool.Instance.flower);
-            newFlower.transform.position = transObj.position;
-
-            transBody.DOLocalMove(new Vector3(0, ballUtil.heightTrunk, 0), 0.5f).SetEase(Ease.Linear);
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        public void GrowUp()
-        {
-            onTrunk = true;
-            transBody.localPosition = new Vector3(0, ballUtil.heightTrunk, 0);
-            
-            transBody.localScale = Vector3.zero;
-            transBody.DOScale(Vector3.one, 0.5f).SetEase(Ease.Linear);
         }
     }
 }

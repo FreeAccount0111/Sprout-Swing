@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Ball Util
   m_EditorClassIdentifier: 
   speedGround: 20
-  heightTrunk: 0.9
+  heightTrunk: 0.75
